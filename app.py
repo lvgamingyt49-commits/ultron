@@ -1,6 +1,6 @@
 import os
 import json
-from flask import Flask, render_template, request, jsonify, send_file
+from flask import Flask, render_template, request, jsonify, send_file, send_from_directory
 from transcript import get_transcript_with_metadata
 from assistant import ask, reset_conversation
 from tools import load_knowledge, search_knowledge, get_knowledge_context
@@ -16,8 +16,17 @@ app = Flask(__name__)
 
 @app.route('/')
 def index():
-    videos = load_knowledge()
-    return render_template('index.html', videos=videos)
+    return render_template('index.html', videos=load_knowledge())
+
+@app.route('/orb')
+def orb():
+    return send_from_directory(os.path.dirname(__file__), 'orb.html')
+
+@app.after_request
+def add_cors(response):
+    response.headers['Access-Control-Allow-Origin'] = '*'
+    response.headers['Access-Control-Allow-Headers'] = '*'
+    return response
 
 @app.route('/api/add', methods=['POST'])
 def add_video():
