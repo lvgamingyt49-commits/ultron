@@ -1,37 +1,17 @@
 import os
-import re
+import json
+import requests
 import tools
 
-OPENAI_AVAILABLE = False
+API_KEY = ""
 try:
-    from openai import OpenAI
     from dotenv import load_dotenv
     load_dotenv()
-    key = os.getenv('OPENAI_API_KEY', '')
-    if key and 'your-api' not in key and len(key) > 10:
-        OPENAI_AVAILABLE = True
-        client = OpenAI(api_key=key)
+    API_KEY = os.getenv('GEMINI_API_KEY', '')
 except:
     pass
 
-LOCAL_MODEL_AVAILABLE = False
-try:
-    import torch
-    from transformers import AutoModelForCausalLM, AutoTokenizer
-    LOCAL_MODEL_AVAILABLE = True
-except:
-    pass
-
-tokenizer = None
-model = None
-history = []
-
-def load_local():
-    global tokenizer, model
-    if model is None and LOCAL_MODEL_AVAILABLE:
-        tokenizer = AutoTokenizer.from_pretrained("HuggingFaceTB/SmolLM2-360M-Instruct")
-        model = AutoModelForCausalLM.from_pretrained("HuggingFaceTB/SmolLM2-360M-Instruct")
-    return tokenizer, model
+GEMINI_AVAILABLE = bool(API_KEY and len(API_KEY) > 10)
 
 def get_tools_context(question):
     context = ""
@@ -46,32 +26,25 @@ def get_tools_context(question):
             context += f"Knowledge: {kc}\n"
     return context
 
-def ask_openai(question, context):
-    history.append({"role": "user", "content": question})
-    messages = [{"role": "system", "content": "You are ULTRON, an AI assistant. Be concise."}]
-    for msg in history[-6:]:
-        messages.append(msg)
+def ask_gemini(question, context):
+    system = "You are ULTRON, an AI assistant. Be concise. Answer in 1-2 sentences."
+    prompt = f"{system}\n"
     if context:
-        messages.append({"role": "system", "content": context})
-    r = client.chat.completions.create(model="gpt-3.5-turbo", messages=messages, max_tokens=300)
-    answer = r.choices[0].message.content
-    history.append({"role": "assistant", "content": answer})
-    return answer
+        prompt += f"\nContext: {context}\n"
+    prompt += f"\nUser: {question}\nUltron:"
 
-def ask_local(question, context):
-    tok, mod = load_local()
-    messages = [{"role": "system", "content": "You are ULTRON. Be concise. Answer in 1-2 sentences."}]
-    if context:
-        messages.append({"role": "user", "content": f"Context: {context}"})
-        messages.append({"role": "assistant", "content": "Understood."})
-    messages.append({"role": "user", "content": question})
-    prompt = tok.apply_chat_template(messages, tokenize=False)
-    inputs = tok(prompt, return_tensors="pt", truncation=True, max_length=1024)
-    out = mod.generate(**inputs, max_new_tokens=100, temperature=0.7, do_sample=True, pad_token_id=tok.eos_token_id)
-    answer = tok.decode(out[0], skip_special_tokens=True)
-    if "assistant" in answer:
-        answer = answer.split("assistant")[-1].strip()
-    return answer if answer else "I'm not sure."
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key={API_KEY}"
+    data = {"contents": [{"parts": [{"text": prompt}]}]}
+    for attempt in range(3):
+        try:
+            r = requests.post(url, json=data, timeout=15)
+            if r.status_code == 200:
+                result = r.json()
+                text = result.get("candidates", [{}])[0].get("content", {}).get("parts", [{}])[0].get("text", "")
+                return text.strip() if text else "No response."
+        except:
+            pass
+    return "Service temporarily unavailable. Try again."
 
 def ask_fallback(question, context):
     q = question.lower()
@@ -83,19 +56,17 @@ def ask_fallback(question, context):
         return "I am ULTRON, an AI assistant. I can search the web, extract YouTube transcripts, and answer questions."
     if any(w in q for w in ['time', 'date']):
         return f"The current time is {tools.get_time()}."
-    if any(w in q for w in ['search', 'find']) and context:
-        return context
-    return f"I understand your question about '{question[:100]}'. For smarter AI responses, add an OPENAI_API_KEY to your .env file."
+    return f"ULTRON active. I can answer questions using web search and YouTube knowledge."
 
 def ask(question):
     context = get_tools_context(question)
-    if OPENAI_AVAILABLE:
-        return ask_openai(question, context)
-    elif LOCAL_MODEL_AVAILABLE:
-        return ask_local(question, context)
+    if GEMINI_AVAILABLE:
+        try:
+            return ask_gemini(question, context)
+        except Exception as e:
+            return f"Gemini error: {e}. Using fallback.\n{ask_fallback(question, context)}"
     else:
         return ask_fallback(question, context)
 
 def reset_conversation():
-    global history
-    history = []
+    pass
