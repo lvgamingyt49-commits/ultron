@@ -6,41 +6,157 @@
 <title>ULTRON</title>
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
-body { background: #000; overflow: hidden; font-family: 'Courier New', monospace; cursor: grab; }
+body { background: #000; overflow: hidden; font-family: 'Courier New', monospace; cursor: grab; color: #ccc; }
 body:active { cursor: grabbing; }
 canvas { display: block; }
 
 .hud { position: fixed; pointer-events: none; z-index: 10; }
+.hud-btn { pointer-events: auto; cursor: pointer; }
+
 .hud-title {
-  top: 30px; left: 50%; transform: translateX(-50%);
-  font-size: 28px; letter-spacing: 16px;
-  color: #ff8833; text-shadow: 0 0 30px rgba(255,136,51,0.4), 0 0 60px rgba(255,136,51,0.2);
+  top: 25px; left: 50%; transform: translateX(-50%);
+  font-size: 24px; letter-spacing: 14px;
+  color: var(--accent, #ff8833);
+  text-shadow: 0 0 30px rgba(255,136,51,0.4), 0 0 60px rgba(255,136,51,0.2);
   font-weight: bold;
 }
+
 .hud-hint {
-  bottom: 40px; left: 50%; transform: translateX(-50%);
-  font-size: 11px; color: #553322; letter-spacing: 2px;
+  bottom: 20px; left: 50%; transform: translateX(-50%);
+  font-size: 10px; color: #553322; letter-spacing: 2px;
   text-align: center; line-height: 2;
 }
-.hud-hint .key { color: #884422; border: 1px solid #331a0a; padding: 2px 8px; margin: 0 4px; }
-.hud-status {
-  bottom: 80px; left: 50%; transform: translateX(-50%);
-  font-size: 10px; color: #331a0a; letter-spacing: 4px;
+.hud-hint .key { color: #884422; border: 1px solid #331a0a; padding: 2px 6px; margin: 0 3px; font-size: 9px; }
+
+.controls-panel {
+  position: fixed; top: 70px; right: 20px; z-index: 20;
+  display: flex; flex-direction: column; gap: 6px;
+  pointer-events: none;
 }
+.controls-panel button {
+  pointer-events: auto;
+  background: rgba(0,0,0,0.6); border: 1px solid #331a0a;
+  color: #884422; font-family: inherit; font-size: 10px;
+  padding: 6px 12px; letter-spacing: 2px; cursor: pointer;
+  transition: all 0.2s; text-align: left;
+}
+.controls-panel button:hover { border-color: var(--accent, #ff8833); color: var(--accent, #ff8833); }
+.controls-panel button.active { border-color: var(--accent, #ff8833); color: var(--accent, #ff8833); background: rgba(255,136,51,0.1); }
+
+.color-panel {
+  position: fixed; top: 70px; left: 20px; z-index: 20;
+  display: flex; flex-direction: column; gap: 4px;
+}
+.color-dot {
+  width: 20px; height: 20px; border-radius: 50%;
+  border: 2px solid transparent; cursor: pointer;
+  transition: border-color 0.2s;
+  pointer-events: auto;
+}
+.color-dot:hover { border-color: #fff; }
+.color-dot.active { border-color: #fff; }
+
+.chat-panel {
+  position: fixed; bottom: 80px; right: 20px; z-index: 20;
+  width: 280px; background: rgba(0,0,0,0.85);
+  border: 1px solid #1a0a0a; pointer-events: auto;
+  display: none; flex-direction: column;
+}
+.chat-panel.open { display: flex; }
+.chat-header {
+  padding: 8px 12px; border-bottom: 1px solid #1a0a0a;
+  font-size: 10px; letter-spacing: 3px; color: #553322;
+  display: flex; justify-content: space-between;
+}
+.chat-header button { background: none; border: none; color: #553322; cursor: pointer; font-family: inherit; }
+.chat-msgs {
+  height: 180px; overflow-y: auto; padding: 8px;
+  font-size: 10px; line-height: 1.6;
+}
+.chat-msgs .m { margin-bottom: 4px; }
+.chat-msgs .u { color: #ddaa77; }
+.chat-msgs .a { color: #88bbaa; }
+.chat-input-row {
+  display: flex; border-top: 1px solid #1a0a0a;
+}
+.chat-input-row input {
+  flex: 1; background: transparent; border: none;
+  padding: 8px; color: #ccc; font-family: inherit; font-size: 10px; outline: none;
+}
+.chat-input-row button {
+  background: transparent; border: none; border-left: 1px solid #1a0a0a;
+  color: #553322; padding: 8px 12px; cursor: pointer; font-family: inherit; font-size: 10px;
+}
+
 .scanline {
   position: fixed; top: 0; left: 0; right: 0; height: 1px;
   background: linear-gradient(to bottom, transparent, rgba(255,136,51,0.03), transparent);
-  animation: scan 4s linear infinite; pointer-events: none; z-index: 20;
+  animation: scan 4s linear infinite; pointer-events: none; z-index: 30;
 }
 @keyframes scan { 0% { transform: translateY(0); } 100% { transform: translateY(100vh); } }
+
+.camera-preview {
+  position: fixed; bottom: 80px; left: 20px; z-index: 20;
+  width: 160px; height: 120px; border: 1px solid #1a0a0a;
+  display: none; overflow: hidden;
+}
+.camera-preview video { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
+.camera-preview canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+.camera-preview .cam-status {
+  position: absolute; bottom: 4px; left: 50%; transform: translateX(-50%);
+  font-size: 8px; color: #553322; letter-spacing: 1px; white-space: nowrap;
+}
+
+@media (max-width: 600px) {
+  .hud-title { font-size: 16px; letter-spacing: 8px; }
+  .chat-panel { width: 220px; right: 10px; }
+  .controls-panel { right: 10px; top: 60px; }
+  .controls-panel button { font-size: 8px; padding: 4px 8px; }
+}
 </style>
 </head>
 <body>
-<div class="hud hud-title">U.L.T.R.O.N.</div>
-<div class="hud hud-hint">
+<div class="hud hud-title" id="orbTitle">U.L.T.R.O.N.</div>
+<div class="hud hud-hint" id="orbHint">
   <span class="key">DRAG</span> spin &nbsp; <span class="key">SCROLL</span> zoom
+  &nbsp; <span class="key">G</span> gestures
 </div>
 <div class="scanline"></div>
+
+<div class="color-panel" id="colorPanel">
+  <div class="color-dot active" data-color="#ff8833" style="background:#ff8833" title="Amber"></div>
+  <div class="color-dot" data-color="#33aaff" style="background:#33aaff" title="Blue"></div>
+  <div class="color-dot" data-color="#33ff88" style="background:#33ff88" title="Green"></div>
+  <div class="color-dot" data-color="#ff33aa" style="background:#ff33aa" title="Pink"></div>
+  <div class="color-dot" data-color="#aa33ff" style="background:#aa33ff" title="Purple"></div>
+</div>
+
+<div class="controls-panel">
+  <button onclick="toggleChat()">CHAT</button>
+  <button onclick="toggleCamera()" id="camBtn">CAMERA</button>
+  <button onclick="resetView()">RESET</button>
+  <button onclick="toggleFullscreen()">FULL</button>
+</div>
+
+<div class="camera-preview" id="cameraPreview">
+  <video id="webcam" muted playsinline></video>
+  <canvas id="overlay"></canvas>
+  <div class="cam-status" id="camStatus">CAMERA OFF</div>
+</div>
+
+<div class="chat-panel" id="chatPanel">
+  <div class="chat-header">
+    <span>ULTRON INTERFACE</span>
+    <button onclick="toggleChat()">X</button>
+  </div>
+  <div class="chat-msgs" id="chatMsgs">
+    <div class="m a">ULTRON online. Ask me anything.</div>
+  </div>
+  <div class="chat-input-row">
+    <input id="chatInput" placeholder="Type a message..." onkeydown="if(event.key==='Enter')sendChat()">
+    <button onclick="sendChat()">SEND</button>
+  </div>
+</div>
 
 <script type="importmap">
 {
@@ -58,6 +174,13 @@ import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
+
+let accentColor = '#ff8833';
+let accentHex = 0xffaa30;
+let accentMid = 0xdd7700;
+let accentDim = 0x884400;
+let accentFaint = 0x553300;
+let accentHot = 0xffcc66;
 
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 500);
@@ -77,18 +200,13 @@ const bloom = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.in
 composer.addPass(bloom);
 
 const chromaticPass = new ShaderPass({
-  uniforms: {
-    tDiffuse: { value: null },
-    uTime: { value: 0 },
-    uIntensity: { value: 0.003 }
-  },
+  uniforms: { tDiffuse: { value: null }, uTime: { value: 0 }, uIntensity: { value: 0.003 } },
   vertexShader: `varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
   fragmentShader: `
     uniform sampler2D tDiffuse; uniform float uTime; uniform float uIntensity;
     varying vec2 vUv;
     void main() {
-      vec2 dir = vUv - vec2(0.5); float d = length(dir);
-      float offset = uIntensity * d;
+      vec2 dir = vUv - vec2(0.5); float d = length(dir); float offset = uIntensity * d;
       float flicker = 1.0 + 0.02 * sin(uTime * 30.0) * sin(uTime * 7.3);
       vec4 cr = texture2D(tDiffuse, vUv + dir * offset);
       vec4 cg = texture2D(tDiffuse, vUv);
@@ -105,6 +223,43 @@ controls.dampingFactor = 0.04;
 controls.minDistance = 0.6;
 controls.maxDistance = 40;
 controls.enablePan = false;
+window._controls = controls;
+window._camera = camera;
+
+function updateColors(hexStr) {
+  const h = parseInt(hexStr.slice(1), 16);
+  const r = (h >> 16) & 0xff, g = (h >> 8) & 0xff, b = h & 0xff;
+  const bright = Math.min(255, r + 40) << 16 | Math.min(255, g + 20) << 8 | Math.min(255, b + 10);
+  const mid = Math.max(0, r - 30) << 16 | Math.max(0, g - 30) << 8 | Math.max(0, b - 20);
+  const dim = Math.max(0, r - 80) << 16 | Math.max(0, g - 80) << 8 | Math.max(0, b - 70);
+  const faint = Math.max(0, r - 140) << 16 | Math.max(0, g - 130) << 8 | Math.max(0, b - 120);
+  const hot = Math.min(255, r + 60) << 16 | Math.min(255, g + 40) << 8 | Math.min(255, b + 20);
+  accentHex = bright; accentMid = mid; accentDim = dim; accentFaint = faint; accentHot = hot;
+  document.documentElement.style.setProperty('--accent', hexStr);
+  recolorScene();
+}
+
+function recolorScene() {
+  orbGroup.children.forEach(child => {
+    if (child.type === 'Group') traverseRecolor(child);
+  });
+}
+
+function traverseRecolor(obj) {
+  obj.children.forEach(child => {
+    if (child.isLine || child.isLineSegments) {
+      if (child.material && child.material.color) {
+        const c = child.material.color.getHex();
+        if (c === 0xffaa30) child.material.color.setHex(accentHex);
+        else if (c === 0xdd7700) child.material.color.setHex(accentMid);
+        else if (c === 0x884400) child.material.color.setHex(accentDim);
+        else if (c === 0x553300) child.material.color.setHex(accentFaint);
+        else if (c === 0xffcc66) child.material.color.setHex(accentHot);
+      }
+    }
+    if (child.type === 'Group') traverseRecolor(child);
+  });
+}
 
 const orbGroup = new THREE.Group();
 scene.add(orbGroup);
@@ -126,60 +281,52 @@ function meridian(radius, lon, segs = 120) {
   return new THREE.BufferGeometry().setFromPoints(pts);
 }
 
-const C_BRIGHT = 0xffaa30, C_MID = 0xdd7700, C_DIM = 0x884400, C_FAINT = 0x553300, C_HOT = 0xffcc66;
-
-// Outer shell
+// Build orb scene
 const outerShell = new THREE.Group();
 const R1 = 2.0;
-for (let i = -15; i <= 15; i++) { const lat = (i / 15) * (Math.PI / 2) * 0.95; outerShell.add(new THREE.Line(latRing(R1, lat), lineMat(i % 3 === 0 ? C_MID : C_FAINT, i % 3 === 0 ? 0.5 : 0.12))); }
-for (let i = 0; i < 24; i++) { const lon = (i / 24) * Math.PI * 2; outerShell.add(new THREE.Line(meridian(R1, lon), lineMat(i % 6 === 0 ? C_MID : C_FAINT, i % 6 === 0 ? 0.6 : 0.1))); }
-for (let i = 0; i < 4; i++) { const lon = (i / 4) * Math.PI * 2; for (let j = 0; j < 18; j++) { const t = (j / 17) * 2 - 1; const offset = t * 0.125; const fall = 1 - Math.abs(t) * 0.7; outerShell.add(new THREE.Line(meridian(R1, lon + offset, 200), lineMat(Math.abs(t) < 0.3 ? C_BRIGHT : C_MID, 0.85 * fall))); } }
-for (let j = 0; j < 20; j++) { const t = (j / 19) * 2 - 1; const offset = t * 0.175; const fall = 1 - Math.abs(t) * 0.65; outerShell.add(new THREE.Line(latRing(R1, offset, 200), lineMat(Math.abs(t) < 0.3 ? C_BRIGHT : C_MID, 0.8 * fall))); }
+for (let i = -15; i <= 15; i++) { const lat = (i / 15) * (Math.PI / 2) * 0.95; outerShell.add(new THREE.Line(latRing(R1, lat), lineMat(i % 3 === 0 ? 0xdd7700 : 0x553300, i % 3 === 0 ? 0.5 : 0.12))); }
+for (let i = 0; i < 24; i++) { const lon = (i / 24) * Math.PI * 2; outerShell.add(new THREE.Line(meridian(R1, lon), lineMat(i % 6 === 0 ? 0xdd7700 : 0x553300, i % 6 === 0 ? 0.6 : 0.1))); }
+for (let i = 0; i < 4; i++) { const lon = (i / 4) * Math.PI * 2; for (let j = 0; j < 18; j++) { const t = (j / 17) * 2 - 1; const offset = t * 0.125; const fall = 1 - Math.abs(t) * 0.7; outerShell.add(new THREE.Line(meridian(R1, lon + offset, 200), lineMat(Math.abs(t) < 0.3 ? 0xffaa30 : 0xdd7700, 0.85 * fall))); } }
+for (let j = 0; j < 20; j++) { const t = (j / 19) * 2 - 1; const offset = t * 0.175; const fall = 1 - Math.abs(t) * 0.65; outerShell.add(new THREE.Line(latRing(R1, offset, 200), lineMat(Math.abs(t) < 0.3 ? 0xffaa30 : 0xdd7700, 0.8 * fall))); }
 orbGroup.add(outerShell);
 
-// Panels
 const panelGroup = new THREE.Group();
 for (let i = 0; i < 30; i++) {
   const lat = (Math.random() - 0.5) * Math.PI * 0.8, lon = Math.random() * Math.PI * 2, size = 0.15 + Math.random() * 0.25;
   const g = new THREE.Group();
-  for (let di = 0; di <= 4; di++) {
-    const lt = lat - size/2 + (di/4) * size; const pts = [];
-    for (let dj = 0; dj <= 16; dj++) { const ln = lon - size/2 + (dj/16) * size; pts.push(new THREE.Vector3(R1 * Math.cos(lt) * Math.cos(ln), R1 * Math.sin(lt), R1 * Math.cos(lt) * Math.sin(ln))); }
-    g.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), lineMat(C_DIM, 0.25)));
-  }
-  for (let dj = 0; dj <= 4; dj++) { const ln = lon - size/2 + (dj/4) * size; const pts = []; for (let di = 0; di <= 16; di++) { const lt = lat - size/2 + (di/16) * size; pts.push(new THREE.Vector3(R1 * Math.cos(lt) * Math.cos(ln), R1 * Math.sin(lt), R1 * Math.cos(lt) * Math.sin(ln))); } g.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), lineMat(C_DIM, 0.25))); }
+  for (let di = 0; di <= 4; di++) { const lt = lat - size/2 + (di/4) * size; const pts = []; for (let dj = 0; dj <= 16; dj++) { const ln = lon - size/2 + (dj/16) * size; pts.push(new THREE.Vector3(R1 * Math.cos(lt) * Math.cos(ln), R1 * Math.sin(lt), R1 * Math.cos(lt) * Math.sin(ln))); } g.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), lineMat(0x884400, 0.25))); }
+  for (let dj = 0; dj <= 4; dj++) { const ln = lon - size/2 + (dj/4) * size; const pts = []; for (let di = 0; di <= 16; di++) { const lt = lat - size/2 + (di/16) * size; pts.push(new THREE.Vector3(R1 * Math.cos(lt) * Math.cos(ln), R1 * Math.sin(lt), R1 * Math.cos(lt) * Math.sin(ln))); } g.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), lineMat(0x884400, 0.25))); }
   panelGroup.add(g);
 }
 orbGroup.add(panelGroup);
 
-// Inner core
 const innerCore = new THREE.Group();
 const R3 = 0.9;
-for (let s = 0; s < 8; s++) { const pts = []; for (let i = 0; i <= 300; i++) { const t = i / 300; const lat = t * Math.PI - Math.PI / 2; const lon = t * 4 * Math.PI + (s / 8) * Math.PI * 2; pts.push(new THREE.Vector3(R3 * Math.cos(lat) * Math.cos(lon), R3 * Math.sin(lat), R3 * Math.cos(lat) * Math.sin(lon))); } innerCore.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), lineMat(C_BRIGHT, 0.4))); }
-for (let i = -6; i <= 6; i++) { innerCore.add(new THREE.Line(latRing(R3, (i/6)*(Math.PI/2)*0.9, 80), lineMat(C_DIM, 0.2))); }
-for (let i = 0; i < 12; i++) { innerCore.add(new THREE.Line(meridian(R3, (i/12)*Math.PI*2, 80), lineMat(C_DIM, 0.15))); }
+for (let s = 0; s < 8; s++) { const pts = []; for (let i = 0; i <= 300; i++) { const t = i / 300; const lat = t * Math.PI - Math.PI / 2; const lon = t * 4 * Math.PI + (s / 8) * Math.PI * 2; pts.push(new THREE.Vector3(R3 * Math.cos(lat) * Math.cos(lon), R3 * Math.sin(lat), R3 * Math.cos(lat) * Math.sin(lon))); } innerCore.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), lineMat(0xffaa30, 0.4))); }
+for (let i = -6; i <= 6; i++) { innerCore.add(new THREE.Line(latRing(R3, (i/6)*(Math.PI/2)*0.9, 80), lineMat(0x884400, 0.2))); }
+for (let i = 0; i < 12; i++) { innerCore.add(new THREE.Line(meridian(R3, (i/12)*Math.PI*2, 80), lineMat(0x884400, 0.15))); }
 orbGroup.add(innerCore);
 
-// Core center
 const icoGeo = new THREE.IcosahedronGeometry(0.25, 1);
-const icoWire = new THREE.LineSegments(new THREE.EdgesGeometry(icoGeo), new THREE.LineBasicMaterial({ color: C_HOT, transparent: true, opacity: 0.9, blending: THREE.AdditiveBlending }));
+const icoWireMat = new THREE.LineBasicMaterial({ color: 0xffcc66, transparent: true, opacity: 0.9, blending: THREE.AdditiveBlending });
+const icoWire = new THREE.LineSegments(new THREE.EdgesGeometry(icoGeo), icoWireMat);
 orbGroup.add(icoWire);
 
-const coreMat = new THREE.MeshBasicMaterial({ color: C_HOT, transparent: true, opacity: 0.15, blending: THREE.AdditiveBlending });
+const coreMat = new THREE.MeshBasicMaterial({ color: 0xffcc66, transparent: true, opacity: 0.15, blending: THREE.AdditiveBlending });
 const coreSphere = new THREE.Mesh(new THREE.SphereGeometry(0.15, 16, 16), coreMat);
 orbGroup.add(coreSphere);
 
-const glowMat = new THREE.MeshBasicMaterial({ color: C_MID, transparent: true, opacity: 0.04, blending: THREE.AdditiveBlending });
+const glowMat = new THREE.MeshBasicMaterial({ color: 0xdd7700, transparent: true, opacity: 0.04, blending: THREE.AdditiveBlending });
 const glowSphere = new THREE.Mesh(new THREE.SphereGeometry(0.5, 16, 16), glowMat);
 orbGroup.add(glowSphere);
 
-// Text sprites
+// Text
 const codeTexts = ['sys.init()','0xFF3A','malloc()','>> SCAN','void*','ACK','SYNC OK','ptr_ref','exec()','hash256','::bind','core.0','01101001','>>> RDY','HEAP 4K','TCP/SYN','mutex.lk','IRQ 0x7','DMA xfer','REG EAX','kernel.d','pipe |>','chmod +x','fork()','SIGTERM','eth0: UP','AES-256','RSA 4096','TLS 1.3','HTTP/2','200 OK','fn main','use std','impl Orb','async {}','spawn()','.unwrap'];
 
 function makeText(text, size = 0.08) {
   const c = document.createElement('canvas'); c.width = 256; c.height = 32;
   const ctx = c.getContext('2d'); ctx.font = 'bold 14px Courier New';
-  ctx.fillStyle = `rgba(255,${130+Math.random()*80|0},${20+Math.random()*30|0},${0.35+Math.random()*0.55})`;
+  ctx.fillStyle = `rgba(255,${150+Math.random()*80|0},${30+Math.random()*30|0},${0.35+Math.random()*0.55})`;
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(text, 128, 16);
   const tex = new THREE.CanvasTexture(c); tex.minFilter = THREE.LinearFilter;
   const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false }));
@@ -207,7 +354,7 @@ orbGroup.add(textOuter, textInner, textAmbient);
 const debrisGeos = [new THREE.IcosahedronGeometry(0.012, 0), new THREE.IcosahedronGeometry(0.02, 0), new THREE.IcosahedronGeometry(0.03, 1), new THREE.TetrahedronGeometry(0.015, 0), new THREE.OctahedronGeometry(0.018, 0)];
 const debris = [];
 for (let i = 0; i < 200; i++) {
-  const mesh = new THREE.Mesh(debrisGeos[Math.random() * debrisGeos.length | 0], new THREE.MeshBasicMaterial({ color: Math.random() > 0.7 ? C_BRIGHT : C_MID, transparent: true, opacity: 0.3 + Math.random() * 0.6, blending: THREE.AdditiveBlending }));
+  const mesh = new THREE.Mesh(debrisGeos[Math.random() * debrisGeos.length | 0], new THREE.MeshBasicMaterial({ color: 0xffaa30, transparent: true, opacity: 0.3 + Math.random() * 0.6, blending: THREE.AdditiveBlending }));
   mesh.userData = { orbitR: 1.2 + Math.random() * 4, speed: (0.08 + Math.random() * 0.6) * (Math.random() > 0.5 ? 1 : -1), tiltX: (Math.random() - 0.5) * Math.PI * 0.9, tiltZ: (Math.random() - 0.5) * Math.PI * 0.5, phase: Math.random() * Math.PI * 2 };
   debris.push(mesh); orbGroup.add(mesh);
 }
@@ -220,13 +367,13 @@ const dotC = document.createElement('canvas'); dotC.width = dotC.height = 64;
 const dCtx = dotC.getContext('2d'); const gr = dCtx.createRadialGradient(32, 32, 0, 32, 32, 32);
 gr.addColorStop(0, 'rgba(255,170,48,1)'); gr.addColorStop(0.2, 'rgba(255,120,20,0.6)'); gr.addColorStop(0.5, 'rgba(200,80,0,0.15)'); gr.addColorStop(1, 'rgba(100,40,0,0)');
 dCtx.fillStyle = gr; dCtx.fillRect(0, 0, 64, 64);
-const dustMat = new THREE.PointsMaterial({ map: new THREE.CanvasTexture(dotC), size: 0.04, transparent: true, opacity: 0.5, blending: THREE.AdditiveBlending, depthWrite: false, sizeAttenuation: true, color: C_BRIGHT });
+const dustMat = new THREE.PointsMaterial({ map: new THREE.CanvasTexture(dotC), size: 0.04, transparent: true, opacity: 0.5, blending: THREE.AdditiveBlending, depthWrite: false, sizeAttenuation: true, color: 0xffaa30 });
 const dustPoints = new THREE.Points(dustGeo, dustMat);
 orbGroup.add(dustPoints);
 
 // Scan rings
-const scanRing1 = new THREE.Mesh(new THREE.RingGeometry(1.99, 2.01, 120), new THREE.MeshBasicMaterial({ color: C_BRIGHT, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, side: THREE.DoubleSide, depthWrite: false }));
-const scanRing2 = new THREE.Mesh(new THREE.RingGeometry(0.622, 0.638, 80), new THREE.MeshBasicMaterial({ color: C_BRIGHT, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, side: THREE.DoubleSide, depthWrite: false }));
+const scanRing1 = new THREE.Mesh(new THREE.RingGeometry(1.99, 2.01, 120), new THREE.MeshBasicMaterial({ color: 0xffaa30, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, side: THREE.DoubleSide, depthWrite: false }));
+const scanRing2 = new THREE.Mesh(new THREE.RingGeometry(0.622, 0.638, 80), new THREE.MeshBasicMaterial({ color: 0xffaa30, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, side: THREE.DoubleSide, depthWrite: false }));
 scanRing1.rotation.x = Math.PI / 2; scanRing2.rotation.x = Math.PI / 2;
 orbGroup.add(scanRing1, scanRing2);
 
@@ -252,7 +399,7 @@ function animate() {
   coreSphere.scale.setScalar(1 + surge + Math.sin(t * 5) * 0.05);
   coreMat.opacity = Math.min(0.6, Math.max(0, (0.08 + Math.sin(t * 1.2) * 0.05 + surge * 0.2) * (1 - Math.pow(Math.max(0, Math.sin(t * 0.25)), 3) * 0.95)));
   glowSphere.scale.setScalar(1 + surge * 0.8);
-  glowMat.opacity = Math.max(0, (0.03 + surge * 0.08) * (1 - Math.pow(Math.max(0, Math.sin(t * 0.25)), 3) * 0.9));
+  glowMat.opacity = Math.max(0, (0.03 + surge * 0.08));
   icoWire.scale.setScalar(1 + surge * 0.6);
   icoWire.material.opacity = Math.min(1, 0.5 + surge * 0.4);
 
@@ -282,6 +429,119 @@ window.addEventListener('resize', () => {
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
   composer.setSize(window.innerWidth, window.innerHeight);
+});
+
+// Expose for non-module scripts
+window._scene = scene;
+window._orbGroup = orbGroup;
+window._recolorScene = recolorScene;
+window._updateColors = updateColors;
+console.log('ULTRON orb loaded');
+</script>
+
+<script>
+// Color theming
+document.querySelectorAll('.color-dot').forEach(dot => {
+  dot.addEventListener('click', () => {
+    document.querySelectorAll('.color-dot').forEach(d => d.classList.remove('active'));
+    dot.classList.add('active');
+    const color = dot.dataset.color;
+    if (window._updateColors) window._updateColors(color);
+  });
+});
+
+// Chat
+let chatOpen = false;
+function toggleChat() {
+  chatOpen = !chatOpen;
+  document.getElementById('chatPanel').classList.toggle('open', chatOpen);
+}
+
+async function sendChat() {
+  const input = document.getElementById('chatInput');
+  const q = input.value.trim();
+  if (!q) return;
+  input.value = '';
+  const msgs = document.getElementById('chatMsgs');
+  msgs.innerHTML += `<div class="m u">> ${q}</div>`;
+  msgs.innerHTML += `<div class="m a">Processing...</div>`;
+  msgs.scrollTop = msgs.scrollHeight;
+  try {
+    const r = await fetch('/api/ask', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ question: q })
+    });
+    const d = await r.json();
+    msgs.children[msgs.children.length - 1].remove();
+    msgs.innerHTML += `<div class="m a">${d.answer || 'No response'}</div>`;
+  } catch(e) {
+    msgs.children[msgs.children.length - 1].remove();
+    msgs.innerHTML += `<div class="m a">Backend offline. Run the Flask server.</div>`;
+  }
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+// Camera / Hand tracking
+let cameraActive = false;
+let camStream = null;
+
+async function toggleCamera() {
+  const preview = document.getElementById('cameraPreview');
+  const btn = document.getElementById('camBtn');
+  const video = document.getElementById('webcam');
+  const status = document.getElementById('camStatus');
+
+  if (cameraActive) {
+    if (camStream) camStream.getTracks().forEach(t => t.stop());
+    preview.style.display = 'none';
+    btn.classList.remove('active');
+    btn.textContent = 'CAMERA';
+    cameraActive = false;
+    status.textContent = 'CAMERA OFF';
+    return;
+  }
+
+  try {
+    camStream = await navigator.mediaDevices.getUserMedia({ video: { width: 208, height: 156 } });
+    video.srcObject = camStream;
+    await video.play();
+    preview.style.display = 'block';
+    btn.classList.add('active');
+    btn.textContent = 'CAM ON';
+    cameraActive = true;
+    status.textContent = 'SHOW HANDS';
+  } catch(e) {
+    status.textContent = 'CAMERA DENIED';
+  }
+}
+
+// Fullscreen
+function toggleFullscreen() {
+  if (!document.fullscreenElement) {
+    document.documentElement.requestFullscreen();
+  } else {
+    document.exitFullscreen();
+  }
+}
+
+// Reset view
+function resetView() {
+  if (window._camera && window._controls) {
+    window._camera.position.set(0, 0.5, 5.5);
+    window._controls.target.set(0, 0, 0);
+    window._camera.lookAt(0, 0, 0);
+    window._controls.update();
+  }
+}
+
+// Keyboard shortcuts
+document.addEventListener('keydown', e => {
+  if (e.key === 'g' || e.key === 'G') toggleCamera();
+  if (e.key === 'r' || e.key === 'R') resetView();
+  if (e.key === 'f' || e.key === 'F') toggleFullscreen();
+  if (e.key === '+' || e.key === '=') { if (window._controls) window._controls.dollyIn(1.4); }
+  if (e.key === '-' || e.key === '_') { if (window._controls) window._controls.dollyOut(1.4); }
 });
 </script>
 </body>
