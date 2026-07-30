@@ -3,3 +3,6 @@ youtube-transcript-api
 openai
 python-dotenv
 requests
+# Optional (for local AI without API key):
+# torch
+# transformers
